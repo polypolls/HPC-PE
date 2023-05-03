@@ -324,8 +324,8 @@ std::vector<fvec> MLPNet::applyActivation(std::vector<fvec>& input) {
             return output;
             break;
         }
-        case 1: {// ReLU
-            // add code here for SIMD-ized ReLU
+        case 1: {// SIMD-ized ReLU
+            output = MLPMath::applyReLU(input);
             return output;
             break;
         }
@@ -351,8 +351,10 @@ void MLPNet::backPropActivation(int layerIndex, int activationType, int subBatch
             break;
         }
         case 1:{
-            // ReLU
-            // add code here for SIMD-ized ReLU
+            fvec zero = fvec(0.0f);
+            for (std::size_t i = 0; i < rDelta.size(); i++) {
+                rDelta[i] = (rawOutput[i] > zero) * rDelta[i];
+            }
             break;
         }
         default:{

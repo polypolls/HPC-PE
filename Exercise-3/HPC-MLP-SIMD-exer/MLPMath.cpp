@@ -287,3 +287,21 @@ std::vector<fvec> MLPMath::applyTanH(std::vector<fvec>& rawHidden) {
     
     return result;
 }
+
+std::vector<fvec> MLPMath::applyReLU(std::vector<fvec>& input) {
+
+    std::vector<fvec> result(input.size());
+
+    for (std::size_t iv = 0; iv < fvecLen; iv++) {
+        for (std::size_t i = 0; i < input.size(); i++) {
+            if (input[i][iv] > 0.0f) {
+                result[i][iv] = input[i][iv];
+            }
+            else {
+                result[i][iv] = 0.0f;
+            }
+        }
+    }
+    
+    return result;
+}

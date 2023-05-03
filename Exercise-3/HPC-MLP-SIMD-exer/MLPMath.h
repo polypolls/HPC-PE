@@ -90,6 +90,8 @@ public:
 
 	static std::vector<fvec> applyTanH(std::vector<fvec>& rawHidden);
 
+	static std::vector<fvec> applyReLU(std::vector<fvec>& rawHidden);
+
 
 	static std::vector<std::vector<float>> addMatrix2D(std::vector<std::vector<float>>& A, std::vector<std::vector<float>>& B);
 

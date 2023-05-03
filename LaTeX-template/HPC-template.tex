@@ -10,6 +10,7 @@
 \usepackage{pgfplots}
 \usepackage{enumitem}
 \usepackage{subcaption}
+\usepackage{hyperref}
 
 \title{\textbf{High Performance Computer Architectures Practical Course \\ - Exercise 2 -} \\[10mm]}
 \author{Tutorium 1 \\[10mm] David Jordan (6260776) \\[1mm] Florian Rüffer (7454628) \\[1mm] Michael Samjatin (7485765) \\[10mm]}
@@ -29,72 +30,138 @@
     linewidth=1\linewidth,
     captionpos=b
 }
-
+\renewcommand{\lstlistingname}{File}% Listing -> Algorithm
+\renewcommand{\lstlistlistingname}{List of \lstlistingname s}% List of Listings -> List of Algorithms
 
 \begin{document}
 \maketitle
 \newpage
-\section*{Problem 1}
+\section{Neural Networks and SIMD}
 % To add numbered subsection / section / etc. remove "*".
-\subsection*{Add subsection}
-\subsection*{Add subsection}
-\subsection*{Add subsection}
-\section*{Problem 2}
-% To add numbered subsection / section / etc. remove "*".
-\subsection{Add subsection}
-\subsection{Add subsection}
-\subsection{Add subsection}
-\renewcommand{\lstlistingname}{File}% Listing -> Algorithm
-\renewcommand{\lstlistlistingname}{List of \lstlistingname s}% List of Listings -> List of Algorithms
+\subsection*{1}
+\subsection*{2}
+The task for this exercise is to add SIMD (Single Instruction, Multiple Data) support to our neural network functions.
+We will start of with the simd-ized version of the ReLU activation function. \\
 
-\begin{lstlisting}[caption=Add caption]
-std::vector<float> MLPMath::applyReLU(std::vector<float>& input) {
+\noindent The first noticable detail is the changed input. We input type is "fvec".
+Fvec is a SIMD-packed set of values, to be exact 4 packed 32-bit floating point numbers.
+Once again we create a result vector, the same size as the input. Subsequently we loop for 1.) every element of fvec (here this is 4) and 2.)
+the number of elements of the input. As a result, we loop over every element of the input. \\
 
-    std::vector<float> result(input.size());
+\noindent Finally, we check the conditions associated with the ReLU activation function for every of those elements.
+The defintion of ReLU is provided in the Appendix (\hyperref[subsec:ReLU]{{\ref*{subsec:ReLU}}})
 
-    for (std::size_t i = 0; i < input.size(); i++) {
 
-        if (input[i] >= 0) {  
-            result[i] = input[i];
-        }
-        else {
-            result[i] = 0.0f;
+\begin{lstlisting}[caption=SIMD-ized ReLU]
+    std::vector<fvec> MLPMath::applyReLU(std::vector<fvec>& input) {
+
+    std::vector<fvec> result(input.size());
+
+    for (std::size_t iv = 0; iv < fvecLen; iv++) {
+        for (std::size_t i = 0; i < input.size(); i++) {
+            if (input[i][iv] > 0.0f) {
+                result[i][iv] = input[i][iv];
+            }
+            else {
+                result[i][iv] = 0.0f;
+            }
         }
     }
-
+    
     return result;
 }
 \end{lstlisting}
 
-\begin{center}
+\newpage
+\noindent Another essential part is the backPropActivation function.
+Here we provide just the code snippet, which specifically implements ReLU. \\
 
-\begin{tikzpicture}
-\begin{axis}[
-    xlabel={$x$},
-    ylabel={$y$},
-    axis lines=middle,
-    xmin=-5, xmax=5,
-    ymin=-0.5, ymax=5,
-    xtick={-5,-4,-3,-2,-1,0,1,2,3,4,5},
-    ytick={0,1,2,3,4,5},
-    yticklabels={0,1,2,3,4,5},
-    xticklabels={-5,-4,-3,-2,-1,0,1,2,3,4,5},
-    samples=100,
-    domain=-5:5,
-    smooth,
-    thick
-]
-\addplot+[mark=none] {max(0,x)};
-\end{axis}
-\end{tikzpicture}
-\end{center}
-\[
-\text{ReLU}(x) =
-\begin{cases}
-x, & \text{if } x \geq 0 \\
-0, & \text{otherwise}
-\end{cases}
-\]
+\noindent In this case there are not many significant changes.
+We want to ensure, that this function will execute properly if provided with a fvec vector input.
+For this to work, line 4 is the most essential one to understand. Here the fvec-type overloads the ">"-operator.
+To understand the underlying functionality, please view the following example. \\
+
+\noindent "rawOutput" contains the elements: [1.0, -1.0, 2.0, -0.5] \\
+"zero" contains the elements [0.0, 0.0, 0.0, 0.0] \\
+
+\noindent Overloading will produce a result like this:
+[$1.0>0.0,-1.0>0.0,2.0>0.0,-0.5>0$] \\\\
+\noindent This checks the condition for every element and can the abbreviated into the following form: [0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000]
+(1 - True \& 0 - False)
+
+\begin{lstlisting}[caption=backPropActivation]
+    case 1:{
+        fvec zero = fvec(0.0f);
+        for (std::size_t i = 0; i < rDelta.size(); i++) {
+            rDelta[i] = (rawOutput[i] > zero) * rDelta[i];
+        }
+        break;
+    }
+\end{lstlisting}
+
+\newpage
+
+\noindent Finally we need to incorporate our SIMD-ized ReLU function into the applyActivation function (Line 10-14).
+\begin{lstlisting}[caption=applyActivation]
+    std::vector<fvec> MLPNet::applyActivation(std::vector<fvec>& input) {
+
+    std::vector<fvec> output(input.size());
+    switch (activationType_) {
+        case 0: {// TanH
+            output = MLPMath::applyTanH(input);
+            return output;
+            break;
+        }
+        case 1: {// SIMD-ized ReLU
+            output = MLPMath::applyReLU(input);
+            return output;
+            break;
+        }
+        default: {
+            return output;
+            break;
+        }
+    }
+}
+\end{lstlisting}
+
+
+\subsection*{3}
+\section{Matrix}
+% To add numbered subsection / section / etc. remove "*".
+\section{Quadratic Equation}
+\section{CheckSum}
+
+\section{Appendix}
+\subsection{ReLU}\label{subsec:ReLU}
+\begin{center}
+    \begin{tikzpicture}
+    \begin{axis}[
+        xlabel={$x$},
+        ylabel={$y$},
+        axis lines=middle,
+        xmin=-5, xmax=5,
+        ymin=-0.5, ymax=5,
+        xtick={-5,-4,-3,-2,-1,0,1,2,3,4,5},
+        ytick={0,1,2,3,4,5},
+        yticklabels={0,1,2,3,4,5},
+        xticklabels={-5,-4,-3,-2,-1,0,1,2,3,4,5},
+        samples=100,
+        domain=-5:5,
+        smooth,
+        thick
+    ]
+    \addplot+[mark=none] {max(0,x)};
+    \end{axis}
+    \end{tikzpicture}
+    \end{center}
+    \[
+    \text{ReLU}(x) =
+    \begin{cases}
+    x, & \text{if } x \geq 0 \\
+    0, & \text{otherwise}
+    \end{cases}
+    \]
 
 
 
