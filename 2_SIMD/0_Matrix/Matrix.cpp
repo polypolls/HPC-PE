@@ -7,8 +7,8 @@
 
 // Finish SIMDized version. Compare results and time.
 
-#include "../../../vectors/P4_F32vec4.h" // simulation of the SSE instruction
-#include "../../../TStopwatch.h"
+#include "include/P4_F32vec4.h" // simulation of the SSE instruction
+#include "include/TStopwatch.h"
 
 #include <iostream>
 using namespace std;
@@ -20,9 +20,9 @@ const int N = 1000; // matrix size. Has to be dividable by 4.
 
 const int NIter = 100; // repeat calculations many times in order to neglect memory reading time
 
-float a[N][N];      // input array
-float c[N][N];      // output array for scalar computations
-float c_simd[N][N]; // output array for SIMD computations
+float a[N][N] __attribute__((aligned(16)));      // input array
+float c[N][N]; // output array for scalar computations
+float c_simd[N][N] __attribute__((aligned(16))); // output array for SIMD computations
 
 template<typename T> // required calculations
 T f(T x) {
@@ -64,7 +64,14 @@ int main() {
   
     /// SIMD VECTORS
   TStopwatch timerSIMD;
-    // TODO
+  for( int ii = 0; ii < NIter; ii++ )
+    for( int i = 0; i < N; i++ ) {
+      for( int j = 0; j < N; j+=fvecLen ) {
+        fvec &aVec = reinterpret_cast<fvec&>(a[i][j]);
+        fvec &cVec = reinterpret_cast<fvec&>(c_simd[i][j]);
+        cVec = f(aVec);
+      }
+    }
   timerSIMD.Stop();
 
   double tScal = timerScalar.RealTime()*1000;
