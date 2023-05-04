@@ -12,7 +12,7 @@
 \usepackage{subcaption}
 \usepackage{hyperref}
 
-\title{\textbf{High Performance Computer Architectures Practical Course \\ - Exercise 2 -} \\[10mm]}
+\title{\textbf{High Performance Computer Architectures Practical Course \\ - Exercise 3 -} \\[10mm]}
 \author{Tutorium 1 \\[10mm] David Jordan (6260776) \\[1mm] Florian Rüffer (7454628) \\[1mm] Michael Samjatin (7485765) \\[10mm]}
 
 
@@ -78,7 +78,7 @@ Here we provide just the code snippet, which specifically implements ReLU. \\
 
 \noindent In this case there are not many significant changes.
 We want to ensure, that this function will execute properly if provided with a fvec vector input.
-For this to work, line 4 is the most essential one to understand. Here the fvec-type overloads the ">"-operator.
+For this to work, line 4 is the most essential one to understand. Here the fvec-type overloads the "$>$"-operator.
 To understand the underlying functionality, please view the following example. \\
 
 \noindent "rawOutput" contains the elements: [1.0, -1.0, 2.0, -0.5] \\
@@ -127,8 +127,66 @@ To understand the underlying functionality, please view the following example. \
 
 
 \subsection*{3}
+
 \section{Matrix}
-% To add numbered subsection / section / etc. remove "*".
+In this task we need to speed up Matrix calculations using SIMD.
+As displayed below, we want to go from matrix a to matrix c.
+
+\[
+a = \begin{bmatrix}
+a_0 & a_1 & a_2 \\
+a_3 & a_4 & a_5 \\
+a_6 & a_7 & a_8
+\end{bmatrix}
+\]
+
+\[
+c = \begin{bmatrix}
+\sqrt{a_0} & \sqrt{a_1} & \sqrt{a_2} \\
+\sqrt{a_3} & \sqrt{a_4} & \sqrt{a_5} \\
+\sqrt{a_6} & \sqrt{a_7} & \sqrt{a_8}
+\end{bmatrix}
+\]
+\newpage
+
+\noindent First of all we need to change the input \& output matrices (output for scalar computation stays the same).
+We do this by changing the memory alignment of the values of the matrices.
+This is a requirement for SIMD-ized operations.
+\begin{lstlisting}[caption=Matrix.cpp]
+float a[N][N] __attribute__((aligned(16)));      // input array
+float c[N][N]; // output array for scalar computations
+float c_simd[N][N] __attribute__((aligned(16))); // output array for SIMD computations
+\end{lstlisting}
+
+\noindent The loops for the computation part remain mostly unchanged to the scalar version.
+The inner loop runs N-times but our loop variable increases by 4, because each vector has 4 elements and those can the calculated in parallel.
+We loop for $NIter - 1$ times, to neglect memory reading time.
+Subsequently we loop over matrix a to transform it into matrix c (NxN for rows and columns).
+The distinct section ranges from line 5 to line 7. We define two new vectors, called aVec and cVec, which suppose to be the vector counter parts to the scalar versions of matrix a and matrix c.
+At the beginning those were initialized with float values, so we use the reinterpret\_cast command to allow treating
+a variables memory representation as another type. In this case we substitute float for fvec.
+Finally we just plug those values into the template function to calculate the root (Line 7).
+
+\begin{lstlisting}[caption=Matrix.cpp]
+TStopwatch timerSIMD;
+for( int ii = 0; ii < NIter; ii++ )
+    for( int i = 0; i < N; i++ ) {
+        for( int j = 0; j < N; j++ ) {
+            fvec &aVec = reinterpret_cast<fvec&>(a[i][j]);
+            fvec &cVec = reinterpret_cast<fvec&>(c_simd[i][j]);
+            cVec = f(aVec);
+        }
+    }
+timerSIMD.Stop();
+\end{lstlisting}
+
+\noindent We can compute 4 values in parallel and therefore can expect a speed-up factor of 4. Due to running environment deviation, the speed-up factor varies.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{matrix-output.png} 
+    \caption{Output}
+    \label{fig:example}
+  \end{figure}
 \section{Quadratic Equation}
 \section{CheckSum}
 
