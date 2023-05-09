@@ -3,9 +3,9 @@
 /// @author I.Kulakov, M.Zyzak
 /// @e-mail I.Kulakov@gsi.de, M.Zyzak@gsi.de
 /// 
-/// use "g++ QuadraticEquation.cpp -O3 -fno-tree-vectorize -g -msse; ./a.out" to run
+/// use "g++ QuadraticEquation_solution.cpp -O3 -fno-tree-vectorize -g -msse; ./a.out" to run
 
-/// Task:  
+/// Task:
 /// 1. Write the SIMD code for the root calculation using SIMD intrinsics and copying the data to SIMD vectors.
 /// 2. Write the SIMD code using SIMD intrinsics and casting the data from the scalar arrays to SIMD vectors (use reinterpret_cast for this). Compare the time with a previous task.
 /// 3. Write the SIMD code using header files and copying the data to SIMD vectors. Compare the time with previous tasks.
@@ -26,16 +26,16 @@
 /// type2* pointer2 = reinterpret_cast<type2*>( pointer1 ) - change pointer type
 
 #include "xmmintrin.h"
-#include "../../../vectors/P4_F32vec4.h" // simulation of the SSE instruction
-//#include "../../vectors/PSEUDO_F32vec4.h" // simulation of the SSE instruction with vector width = 4
-//#include "../../vectors/PSEUDO_F32vec1.h" // simulation of the SSE instruction with vector width = 1
+#include "include/P4_F32vec4.h" // simulation of the SSE instruction
+//#include "../../../vectors/PSEUDO_F32vec4.h" // simulation of the SSE instruction with vector width = 4
+//#include "../../../vectors/PSEUDO_F32vec1.h" // simulation of the SSE instruction with vector width = 1
 
 #include <cmath>
 #include <iostream>
 using namespace std;
 
 #include <stdlib.h> // rand
-#include "../../../TStopwatch.h"
+#include "include/TStopwatch.h"
 
 static const int NVectors = 10000;
 static const int N = NVectors*fvecLen;
@@ -50,12 +50,12 @@ void CheckResults(const float* yScalar, const float* ySIMD, const int NSIMD)
     if( fabs(yScalar[i] - ySIMD[i]) > yScalar[i]*0.01 )
     {
       ok = 0; 
-//      std::cout << i<<" " << yScalar[i] << " " << ySIMD[i] << " " << fabs(yScalar[i] - ySIMD[i])<<std::endl;
+      std::cout << i<<" " << yScalar[i] << " " << ySIMD[i] << " " << fabs(yScalar[i] - ySIMD[i])<<std::endl;
     }
   if(!ok)
     std::cout << "ERROR! SIMD" << NSIMD << " and scalar results are not the same." << std::endl;
- // else
- //   std::cout << "SIMD" << NSIMD << " and scalar results are the same." << std::endl;
+  else
+    std::cout << "SIMD" << NSIMD << " and scalar results are the same." << std::endl;
 }
 
 int main() {
@@ -73,7 +73,7 @@ int main() {
 
   // fill parameters by random numbers
   for( int i = 0; i < N; i++ ) {
-    a[i] = float(rand())/float(RAND_MAX); // put a random value, from 0 to 1
+    a[i] = 0.01 + float(rand())/float(RAND_MAX); // put a random value, from 0.01 to 1.01 (a has not to be equal 0)
     b[i] = float(rand())/float(RAND_MAX);
     c[i] = -float(rand())/float(RAND_MAX);
   }
@@ -95,15 +95,16 @@ int main() {
   for(int io=0; io<NIterOut; io++)
     for(int i=0; i<NVectors; i++)
     {
-      ///__put your code here__      
-      /// copy coefficients b and c 
-
-      ///__put your code here__      
-      /// put the code, which calculates the root       
+      __m128 aV = _mm_set_ps(a[i*fvecLen+3],a[i*fvecLen+2],a[i*fvecLen+1],a[i*fvecLen]);
+      __m128 bV = _mm_set_ps(b[i*fvecLen+3],b[i*fvecLen+2],b[i*fvecLen+1],b[i*fvecLen]);
+      __m128 cV = _mm_set_ps(c[i*fvecLen+3],c[i*fvecLen+2],c[i*fvecLen+1],c[i*fvecLen]);
+      
+      const __m128 det = _mm_sub_ps(_mm_mul_ps(bV,bV) , _mm_mul_ps(_mm_set_ps1(4),_mm_mul_ps(aV,cV) ) );
+      __m128 xV = _mm_div_ps(_mm_sub_ps(_mm_sqrt_ps(det),bV),_mm_mul_ps(_mm_set_ps1(2),aV));
 
       // copy output data      
-//      for(int iE=0; iE<fvecLen; iE++)
-//        x_simd1[i*fvecLen+iE] = (reinterpret_cast<float*>(&xV))[iE];
+      for(int iE=0; iE<fvecLen; iE++)
+        x_simd1[i*fvecLen+iE] = (reinterpret_cast<float*>(&xV))[iE];
     }
   timerSIMD.Stop();
 
@@ -112,11 +113,14 @@ int main() {
   for(int io=0; io<NIterOut; io++)
     for(int i=0; i<N; i+=fvecLen)
     {
-      ///__put your code here__      
-      /// cast coefficients b and c
+      __m128& aV = (reinterpret_cast<__m128&>(a[i]));
+      __m128& bV = (reinterpret_cast<__m128&>(b[i]));
+      __m128& cV = (reinterpret_cast<__m128&>(c[i]));
 
-      ///__put your code here__      
-      /// put the code, which calculates the root
+      __m128& xV = (reinterpret_cast<__m128&>(x_simd2[i]));
+
+      const __m128 det = _mm_sub_ps(_mm_mul_ps(bV,bV) , _mm_mul_ps(_mm_set_ps1(4),_mm_mul_ps(aV,cV) ) );
+      xV = _mm_div_ps(_mm_sub_ps(_mm_sqrt_ps(det),bV),_mm_mul_ps(_mm_set_ps1(2),aV));
     }
   timerSIMD2.Stop();
 
@@ -127,15 +131,16 @@ int main() {
     for(int i=0; i<NVectors; i++)
     {
       // copy input data
-      ///__put your code here__      
-      /// copy coefficients b and c    
+      fvec aV = fvec(a[i*fvecLen],a[i*fvecLen+1],a[i*fvecLen+2],a[i*fvecLen+3]);
+      fvec bV = fvec(b[i*fvecLen],b[i*fvecLen+1],b[i*fvecLen+2],b[i*fvecLen+3]);
+      fvec cV = fvec(c[i*fvecLen],c[i*fvecLen+1],c[i*fvecLen+2],c[i*fvecLen+3]);
       
-      ///__put your code here__      
-      /// put the code, which calculates the root
+      const fvec det = bV*bV - 4*aV*cV;
+      fvec xV = (-bV+sqrt(det))/(2*aV);
 
       // copy output data      
-//      for(int iE=0; iE<fvecLen; iE++)
-//        x_simd3[i*fvecLen+iE] = xV[iE];
+      for(int iE=0; iE<fvecLen; iE++)
+        x_simd3[i*fvecLen+iE] = xV[iE];      
     }
   }
   timerSIMD3.Stop();
@@ -145,12 +150,13 @@ int main() {
   for(int io=0; io<NIterOut; io++)
     for(int i=0; i<N; i+=fvecLen)
     {
-      ///__put your code here__      
-      /// cast coefficients b and c
-      
-      ///__put your code here__      
-      /// put the code, which calculates the root
+      fvec& aV = (reinterpret_cast<fvec&>(a[i]));
+      fvec& bV = (reinterpret_cast<fvec&>(b[i]));
+      fvec& cV = (reinterpret_cast<fvec&>(c[i]));
+      fvec& xV = (reinterpret_cast<fvec&>(x_simd4[i]));
 
+      const fvec det = bV*bV - 4*aV*cV;
+      xV = (-bV+sqrt(det))/(2*aV);
     }
   timerSIMD4.Stop();
 

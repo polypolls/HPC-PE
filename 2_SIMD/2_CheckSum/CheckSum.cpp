@@ -3,12 +3,12 @@
   /// @authors: I.Kulakov; M.Zyzak
   /// @e-mail I.Kulakov@gsi.de; M.Zyzak@gsi.de
   /// 
-  /// use "g++ CheckSum.cpp -O3 -o a.out -fno-tree-vectorize; ./a.out" to run
+  /// use "g++ CheckSum_solution.cpp -O3 -fno-tree-vectorize; ./a.out" to run
 
- // make calculation parallel: a) using SIMD instructions, b) using usual instructions!
+// Finish SIMDized version. Compare results and time.
 
-#include "../../../vectors/P4_F32vec4.h" // simulation of the SSE instruction
-#include "../../../TStopwatch.h"
+#include "include/P4_F32vec4.h" // simulation of the SSE instruction
+#include "include/TStopwatch.h"
 
 #include <iostream>
 using namespace std;
@@ -18,13 +18,13 @@ using namespace std;
 const int NIter = 100;
 
 const int N = 4000000; // matrix size. Has to be dividable by 4.
-unsigned char str[N]; 
+unsigned char str[N] __attribute__ ((aligned(16)));
 
 template< typename T >
 T Sum(const T* data, const int N)
 {
     T sum = 0;
-
+    
     for ( int i = 0; i < N; ++i )
       sum = sum ^ data[i];
     return sum;
@@ -51,18 +51,38 @@ int main() {
 
   unsigned char sumV = 0;
 
+  const int fvecCharLen = fvecLen*4;
+  const int NV = N/fvecCharLen;
+  
   TStopwatch timerSIMD;
-    // TODO
+  for( int ii = 0; ii < NIter; ii++ ) {
+    fvec sumVV = 0;
+    sumVV = Sum<fvec>( reinterpret_cast<fvec*>(str), NV );
+    unsigned char *sumVS = reinterpret_cast<unsigned char*>(&sumVV);
+    
+    sumV = sumVS[0];
+    for ( int iE = 1; iE < fvecCharLen; ++iE )
+      sumV ^= sumVS[iE];
+  }
   timerSIMD.Stop();
-  
+    
     /// SCALAR INTEGER
-  
+    
   unsigned char sumI = 0;
-  
+    
+  const int intCharLen = 4;
+  const int NI = N/intCharLen;
+    
   TStopwatch timerINT;
-    // TODO
+  for( int ii = 0; ii < NIter; ii++ ) {
+    int sumII = Sum<int>( reinterpret_cast<int*>(str), NI );
+    unsigned char *sumIS = reinterpret_cast<unsigned char*>(&sumII);
+        
+    sumI = sumIS[0];
+    for ( int iE = 1; iE < intCharLen; ++iE )
+      sumI ^= sumIS[iE];
+  }
   timerINT.Stop();
-
 
     /// -- OUTPUT --
   
