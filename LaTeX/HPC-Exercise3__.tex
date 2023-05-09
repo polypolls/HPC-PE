@@ -295,7 +295,75 @@ timerSIMD.Stop();
     \label{fig:example}
   \end{figure}
 \section{Quadratic Equation}
+\subsection{Quadratic Equation - Copying of data, SIMD}
+In this task we first need to create a copy of the
+data into a \_\_m128 datatype. For this, we use the
+function \_mm\_set\_ps. This function takes 4 float values
+and concating them in mirrored order.
+Now we need to calculate the root - here we use
+the predefined functions (\_mm\_div\_ps, ...).
+\subsection{Quadratic Equation - Casting, SIMD}
+Here there is not much different to the exercise above.
+We need to cast the data into a \_\_m128 datatype with the
+reinterpret\_cast function.
+Then we can again use the predefined functions to calculate
+the root like before.
+\subsection{Quadratic Equation - Copying of data, fvec}
+We first copy the data with defining the fvecs
+(takes 4 arguments - 32 bit).
+Then we calculate as usual.
+\subsection{Quadratic Equation - Casting, fvec}
+In this exercise we need to cast the data
+like in one of the previous exercises. We
+did this with the reinterpret\_cast function.
+Then we can calculate the root as usual.
+
+
+
+\subsection{Quadratic Equation - Output}
+Time scalar: 75.4349 ms\\
+Time SIMD1:    34.869 ms, speed up 2.16338\\
+Time SIMD2:    34.0381 ms, speed up 2.21619\\
+Time SIMD3:    35.1319 ms, speed up 2.14719\\
+Time SIMD4:    35.0568 ms, speed up 2.15179\\
+SIMD1 and scalar results are the same.\\
+SIMD2 and scalar results are the same.\\
+SIMD3 and scalar results are the same.\\
+SIMD4 and scalar results are the same.\\
+
+\subsection{Quadratic Equation - Time}
+The data computed is for all the options the
+same - 10000 vectors. Theoretically the times
+should be quartered, but it differs a bit.
+
+
+
 \section{CheckSum}
+To get the checksum, we need to XOR over all the bytes of the array. If we want to use 
+the SIMD-ized version, we need to XOR over all in parallel.
+To do this, we first need to map the array to fvecs - reinterpret\_cast. This datatype is needed 
+for the XOR with SIMD.
+Then we can use the template command to XOR over all the bytes in parallel.
+The result is a fvec, which we need to map back to a char. This is done by using the
+reinterpret\_cast command again. After we iterated over the resulting char-array
+and XORed over all the bytes, we get the checksum. Now we can stop the timer.
+\\\\
+If we want to parallelize without SIMD,
+we map the the array to integers (4:1). This array
+is XORED and we have a vector with 4 checksums.
+To get the final checksum, we need to XOR over all the 4 checksums.
+And again, we stop the time.
+\subsection{CheckSum-Result}
+The speedup we've got with the Time SIMD is only 8.32 - in
+theory it should be close to 16 (because of the parallel 
+computations), but in reality there is a bit of difference.
+The speed up of the Scalar Integer is about 4 (3.91) and 
+pretty much what we expected - 4 bytes per integer.
+\subsection{CheckSum-Output}
+Time scalar: 112.757 ms\\
+Time INT: 28.821 ms, speed up 3.91232\\
+Time SIMD: 13.551 ms, speed up 8.32094\\
+Results are the same.
 
 \section{Appendix}
 \subsection{ReLU}\label{subsec:ReLU}
@@ -327,15 +395,6 @@ timerSIMD.Stop();
     0, & \text{otherwise}
     \end{cases}
     \]
-
-
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{filler.png} 
-  \caption{Add caption}
-  \label{fig:example}
-\end{figure}
 
 
 \end{document}
