@@ -1,0 +1,350 @@
+#include "MLPMath.h"
+
+
+float MLPMath::CalculateRandomWeight( int lSize, int rSize) {
+    
+    // source: https://pytorch.org/docs/stable/generated/torch.nn.Linear.html
+    float k = sqrt(1.f / float(lSize * rSize));
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev());
+    std::uniform_real_distribution<float> distr(-k, k);
+    return distr(generator);
+        
+}
+
+
+std::vector<std::vector<float>> MLPMath::addMatrix2D(std::vector<std::vector<float>>& A, std::vector<std::vector<float>>& B) {
+
+    int nArows = (int)A.size();
+    int nAcolumns = (int)A[0].size();
+    int nBrows = (int)B.size();
+    int nBcolumns = (int)B[0].size();
+
+    if (nArows != nBrows || nAcolumns != nBcolumns) {
+        std::cerr << "Matrix indexes incompatible for addition. A shape is (" << nArows << ", " << nAcolumns << ") while B shape is (" << nBrows << ", " << nBcolumns << ")." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    else {
+        // initialize matrix C to all zero values
+        std::vector<std::vector<float>> C;
+        C.resize(nArows);
+        for (int i = 0; i < nArows; i++) {
+            C[i].resize(nAcolumns);
+        }
+
+
+        for (int i = 0; i < nArows; i++) {
+            for (int j = 0; j < nAcolumns; j++) {
+                C[i][j] = A[i][j] + B[i][j];
+            }
+        }
+        return C;
+
+    }
+
+}
+
+std::vector<float> MLPMath::MatMul2D1D(std::vector<std::vector<float>>& A, std::vector<float>& B) {
+
+    int nArows = (int)A.size();
+    int nAcolumns = (int)A[0].size();
+    int nBrows = (int)B.size();
+
+    // initialize matrix C to all zero values
+    std::vector<float> C(nArows);
+
+    // check if A and B are commensurate and multiply
+    if (nAcolumns == nBrows) {
+
+        for (std::size_t i = 0; i < nArows; i++) {
+            float tmp = 0.0f;
+            std::vector<float>& temp = A[i];
+            for (std::size_t k = 0; k < nAcolumns; k++) {
+                tmp += temp[k] * B[k];
+            }
+            C[i] = tmp;
+        }
+        return C;
+    }
+    else {
+        std::cerr << "Matrix indexes incompatible for multiplication. A columns =" << nAcolumns << "B rows =" << nBrows << std::endl;
+        exit(EXIT_FAILURE); 
+    }
+}
+
+std::vector<fvec> MLPMath::MatMul2D1D(std::vector<std::vector<float>>& A, std::vector<fvec>& B) {
+
+    std::size_t nArows = A.size();
+    std::size_t nAcolumns = A[0].size();
+    std::size_t nBrows = B.size();
+
+    // initialize matrix C to all zero values
+    std::vector<fvec> C(nArows);
+
+    // check if A and B are commensurate and multiply
+    if (nAcolumns == nBrows) {
+        // ----------------------------------------------------------
+        // loop over all rows of the matrix A
+        for(std::size_t j = 0; j < nArows; j++){
+            // declare an fvec to store the intermediate results in
+            fvec tempo = fvec(0.0f);
+            // store the j-th row of A in another temporary variable
+            std::vector<float>& tmp = A[j];
+            // looping over the entries and multiplying
+            for (std::size_t l = 0; l < nAcolumns; l++){
+                // utlizing the fvec multiplication for SIMD
+                tempo += tmp[l] * B[l];
+            }
+            C[j] = tempo;
+        }
+        
+        // ----------------------------------------------------------
+        return C;
+    }
+    else {
+        std::cerr << "Matrix indexes incompatible for multiplication. A columns =" << nAcolumns << "B rows =" << nBrows << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+std::vector<float> MLPMath::MatMul1D1D(std::vector<float>& A, std::vector<float>& B) {
+
+    // initialize matrix C to all zero values
+    std::vector<float> result(A.size());
+
+    // check if A and B are commensurate and multiply
+    if (A.size() == B.size()) {
+
+        for (std::size_t i = 0; i < A.size(); i++) {
+            result[i] = A[i] * B[i];
+        }
+        return result;
+    }
+    else {
+        std::cerr << "Matrix indexes incompatible for multiplication. A size =" << (int)A.size() << "B size =" << (int)B.size() << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+std::vector<float> MLPMath::applySoftmax(std::vector<float>& input) {
+
+    int inputSize = (int)input.size();
+    std::vector<float> output(inputSize);
+
+    
+    float maxValue = input[0];
+    for (int i = 1; i < inputSize; i++) {
+        if (maxValue < input[i]) {
+            maxValue = input[i];
+        }
+    }
+
+    float expSum = 0.0f;
+    std::vector<float> expValue(inputSize);
+
+    for (int i = 0; i < inputSize; i++) {
+        float dummy = exp(input[i] - maxValue);
+        expValue[i] = dummy;
+        expSum += dummy;
+    }
+
+    for (int i = 0; i < inputSize; i++) {
+        output[i] = expValue[i] / expSum;
+    }
+
+    return output;
+}
+
+// The function applies the softmax activation function to an input vector of type fvec
+std::vector<fvec> MLPMath::applySoftmax(std::vector<fvec>& input) {
+
+    int inputSize = (int)input.size();
+    // The output vector is initialised to be of the same size as the input vector
+    std::vector<fvec> output(inputSize);
+    // A vector to store the exponential values for each input vector
+    std::vector<float> exponentialValue(inputSize);
+    // Stores the sum of the exp values
+    float exponentialSum = 0.0f;
+
+    // ----------------------------------------------------------
+    // Each column of the imput matrix is looped over
+    for(int i = 0; i < fvecLen; i++){
+        // determines the current max value in the selected column
+        float maximumV = input[0][i];
+        for (std::size_t j = 1; j< inputSize; j++){
+            if (maximumV < input[j][i]){
+                maximumV = input[j][i];
+            }
+        }
+
+        // Determine the exponential values, first clearing the values
+        exponentialSum = 0.0f;
+        exponentialValue.clear();
+        exponentialValue.resize(inputSize);
+
+        // For each input vector in the selected column calculate the exponential value
+        for (std::size_t k = 0; k<inputSize; k++){
+            float temp = exp(input[k][i] - maximumV);
+            exponentialValue[k] = temp;
+            exponentialSum += temp;
+        }
+
+        // Each exp value is divided by the sum of all exponential values to calculate the softmax output
+        for (std::size_t l = 0; l<inputSize; l++){
+            output[l][i] = exponentialValue[l] / exponentialSum;
+        }
+    }
+    // ----------------------------------------------------------
+    
+    return output;
+}
+
+std::vector<std::vector<float>> MLPMath::Transpose2D(std::vector<std::vector<float>>& A) {
+
+    std::size_t nArows = A.size();
+    std::size_t nAcolumns = A[0].size();
+
+    std::vector<std::vector<float>> result(nAcolumns);
+    for (std::size_t i = 0; i < nAcolumns; i++) {
+        result[i].resize(nArows);
+    }
+
+
+    for (std::size_t i = 0; i < nAcolumns; i++) {
+        for (std::size_t j = 0; j < nArows; j++) {
+            result[i][j] = A[j][i];
+        }
+    }
+
+    return result;
+}
+
+
+std::vector<float> MLPMath::sigmoid(std::vector<float>& input) {
+
+    std::vector<float> result((int)input.size());
+
+    for (int i = 0; i < (int)input.size(); i++) {
+        if (input[i] > 0.f) {
+            result[i] = 1.0f / (1.0f + exp(-input[i]));
+        }
+        else {
+            result[i] = exp(input[i]) / (1.0f + exp(input[i]));
+        }
+    }
+
+    return result;
+}
+
+std::vector<float> MLPMath::affineTransform(std::vector<std::vector<float>>& weight, std::vector<float>& input, std::vector<float>& bias) {
+
+    std::vector<float> result(bias.size());
+
+    std::vector<float> term1 = MLPMath::MatMul2D1D(weight, input);
+
+    for (std::size_t i = 0; i < bias.size(); i++) {
+        result[i] = term1[i] + bias[i];
+    }
+
+    return result;
+}
+
+std::vector<fvec> MLPMath::affineTransform(std::vector<std::vector<float>>& weight, std::vector<fvec>& input, std::vector<float>& bias) {
+
+    std::vector<fvec> result(bias.size());
+
+    // MatMul2D1D needs to SIMDized for an SIMD second argument
+    std::vector<fvec> term1 = MLPMath::MatMul2D1D(weight, input);
+
+    for (std::size_t i = 0; i < bias.size(); i++) {
+        result[i] = term1[i] + bias[i];
+    }
+
+    return result;
+}
+
+
+std::vector<float> MLPMath::addVector(const std::vector<float>& A, const std::vector<float>& B) {
+
+    std::vector<float> result(A.size());
+
+    for (std::size_t i = 0; i < A.size(); i++) {
+        result[i] = A[i] + B[i];
+    }
+
+    return result;
+}
+
+std::vector<float> MLPMath::addVector(const std::vector<float>& A, const std::vector<fvec>& B) {
+
+    std::vector<float> result = A;
+
+    for (std::size_t i = 0; i < A.size(); i++) {
+        for (std::size_t iv = 0; iv < fvecLen; iv++) {
+            result[i] += B[i][iv];
+        }
+    }
+
+    return result;
+}
+
+std::vector<float> MLPMath::applyTanH(std::vector<float>& rawHidden) {
+
+    std::vector<float> result(rawHidden.size());
+    float twoexp = 0.0f;
+
+    for (std::size_t i = 0; i < rawHidden.size(); i++) {
+        float tmp = rawHidden[i];
+        if (tmp > 20.f) {  // to handle numerical overflow
+            result[i] = 1.0f;
+        }
+        else {
+            twoexp = exp(2 * tmp);
+            result[i] = (twoexp - 1.0f) / (twoexp + 1.0f);
+        }
+    }
+
+    return result;
+}
+
+
+std::vector<fvec> MLPMath::applyTanH(std::vector<fvec>& rawHidden) {
+
+    std::vector<fvec> result(rawHidden.size());
+    float twoexp = 0.0f;
+    float tmp = 0.0f;
+
+    for (std::size_t iv = 0; iv < fvecLen; iv++) {
+        for (std::size_t i = 0; i < rawHidden.size(); i++) {
+            tmp = rawHidden[i][iv];
+            if (tmp > 20.f) {  // to handle numerical overflow
+                result[i][iv] = 1.0f;
+            }
+            else {
+                twoexp = exp(2 * tmp);
+                result[i][iv] = (twoexp - 1.0f) / (twoexp + 1.0f);
+            }
+        }
+    }
+    
+    return result;
+}
+
+std::vector<fvec> MLPMath::applyReLU(std::vector<fvec>& input) {
+
+    std::vector<fvec> result(input.size());
+
+    for (std::size_t iv = 0; iv < fvecLen; iv++) {
+        for (std::size_t i = 0; i < input.size(); i++) {
+            if (input[i][iv] > 0.0f) {
+                result[i][iv] = input[i][iv];
+            }
+            else {
+                result[i][iv] = 0.0f;
+            }
+        }
+    }
+    
+    return result;
+}
