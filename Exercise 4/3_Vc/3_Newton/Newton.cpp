@@ -16,9 +16,9 @@
 #include <iostream> // cout
 using namespace std;
 
-#include "../../../TStopwatch.h"
+#include "include/TStopwatch.h"
 
-#include <Vc/Vc> // Vector classes 
+#include </Users/polypolls/HPC-PE/Exercise 4/3_Vc/3_Newton/include/vc/include/Vc/Vc> // Vector classes 
 using namespace Vc;
 
 const int N = 100000;
@@ -55,7 +55,15 @@ float FindRootScalar(const float& p1, const float& p2)
 
 float_v FindRootVector(const float_v& p1, const float_v& p2)
 {
-  //TODO write a vectorized code using Vc
+  float_v x = 1.f, x_new = 0.f;
+  float_m mask(true);
+  for( ; !mask.isEmpty(); ) {
+      // for(int i = 0; i < 1000; ++i){ 
+    x = x_new;
+    x_new(mask) = x - F(x,p1,p2) / Fd(x,p1,p2);
+    mask = abs((x_new - x)/x_new) > P;
+  }
+  return x_new;
 }
 
 
@@ -110,6 +118,10 @@ int main()
 
     // copy input
   // TODO copy the data to par1_v and par2_v (you can use load() vunction of Vc)
+  for( int i = 0; i < Nv; ++i ) {
+    par1_v[i].load( par1 + i * float_v::Size );
+    par2_v[i].load( par2 + i * float_v::Size );
+  }
 
     // compute
   timer.Start();
@@ -120,7 +132,10 @@ int main()
   
     // copy output
   // TODO copy the data back to root_v (you can use store() vunction of Vc)
-
+  for( int i = 0; i < Nv; ++i ) {
+    root_v[i].store( root2 + i * float_v::Size );
+  }
+  
   cout << "SIMD part:" << endl;
   if ( CompareResults(root, root2) )
   //if ( CheckResults(root2) )

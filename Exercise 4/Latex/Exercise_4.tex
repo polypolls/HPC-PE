@@ -39,6 +39,77 @@
 \section{Matrix}
 \section{Quadratic Equation}
 \section{Newton}
+In this task we have to vectorize the Newton method. As mentioned in the task description
+the Newton Method is an interative process to approximate the x-axis intersection. \\[5mm]
+
+\begin{lstlisting}[caption=Newton.cpp]
+    float_v FindRootVector(const float_v& p1, const float_v& p2)
+    {
+      float_v x = 1.f, x_new = 0.f;
+      float_m mask(true);
+      for( ; !mask.isEmpty(); ) {
+          // for(int i = 0; i < 1000; ++i){ 
+        x = x_new;
+        x_new(mask) = x - F(x,p1,p2) / Fd(x,p1,p2);
+        mask = abs((x_new - x)/x_new) > P;
+      }
+      return x_new;
+    }
+\end{lstlisting}
+
+\noindent The main idea of vectorizing the Newton method, is the calculation of multiple roots at once.
+This comes along with an issue, because if multiple roots are calculate, then also some of those will
+reach the desired precision earlier than others. To solve this problem we will use masks.
+The underlying principle of masks is a vector with each value mapped to a boolean.
+Each boolean value corresponds to the value of another vector.
+Using this methodology we can assign 'false' to a corresponding number, which already has our desired precision and therefore
+exclude it from further unneccessary calculations.\\
+
+\noindent The first iteration will start with a mask of only 'true' values, as no value has yet reached the desired precision.
+This means every value will be updated accordingly with $x - F (x , p1 , p2 ) / Fd (x , p1 , p2 ) $.
+The next iteration will only update those values, which need further refinement ($\rightarrow$ mask value equals 'true') with $mask = abs (( x_new - x ) / x_new ) > P $.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tikzpicture}[
+            declare function={
+                func(\x)= \x^3 - 2*\x + 2;
+                derivative(\x) = 3*\x^2 - 2;
+            }
+        ]
+        \begin{axis}[
+            axis lines=middle,
+            xlabel=$x$,
+            ylabel={$f(x)$},
+            domain=-2.5:2.5,
+            samples=200,
+            legend pos=outer north east
+        ]
+        \addplot [thick, black, smooth] {func(x)};
+        \addlegendentry{$f(x)$}
+        \addplot [thick, blue, smooth] {derivative(x)};
+        \addlegendentry{$f'(x)$}
+        
+        \pgfmathsetmacro{\a}{1}
+        \pgfmathsetmacro{\b}{\a - func(\a)/derivative(\a)}
+        
+        \addplot [green, dashed, samples=2, domain=(-2.5:2.5)] {(func(\a) + derivative(\a) * (x - \a))};
+        \addlegendentry{$x_0$}
+        
+        \pgfmathsetmacro{\a}{\b}
+        \pgfmathsetmacro{\b}{\a - func(\a)/derivative(\a)}
+        
+        \addplot [orange, dashed, samples=2, domain=(-2.5:2.5)] {(func(\a) + derivative(\a) * (x - \a))};
+        \addlegendentry{$x_1$}
+        
+        \pgfmathsetmacro{\a}{\b}
+        \pgfmathsetmacro{\b}{\a - func(\a)/derivative(\a)}
+        
+        \end{axis}
+        \end{tikzpicture}
+    \end{center}   
+\end{figure}
+
 \section{Random Access}
 
 \begin{figure}[H]
@@ -51,20 +122,6 @@
 
 
 
-
-
-\begin{lstlisting}[caption=Matrix.cpp]
-TStopwatch timerSIMD;
-for( int ii = 0; ii < NIter; ii++ )
-    for( int i = 0; i < N; i++ ) {
-        for( int j = 0; j < N; j++ ) {
-            fvec &aVec = reinterpret_cast<fvec&>(a[i][j]);
-            fvec &cVec = reinterpret_cast<fvec&>(c_simd[i][j]);
-            cVec = f(aVec);
-        }
-    }
-timerSIMD.Stop();
-\end{lstlisting}
 
 
 
