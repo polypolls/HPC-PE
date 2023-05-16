@@ -37,7 +37,71 @@
 \maketitle
 \newpage
 \section{Matrix}
+In this task we had to use the Vc implementation to compute the element-wise square root of the matrix. We iterate over the elements of the matrix using nested loops. The outermost loop (variable k) controls the number of iterations (NIter). The second loop (variable l) iterates over the rows of the matrix, and the innermost loop (variable m) iterates over the columns of the matrix.
+
+Within the innermost loop, the scalar float elements of the a and c?\_simdVc arrays are converted to Vc float vector type (float\_v) using the reinterpret\_cast operation. The function f is then applied to the Vc float vector (aVec) using element-wise operations, and the result is stored in the Vc float vector cVec.
+Here is a part of the modified Matrix.cpp file: 
+
+\begin{lstlisting}[caption=Matrix.cpp]
+   /// Vc
+  TStopwatch timerVc; 
+  // Iterate NIter times
+  for (int k = 0; k < NIter; k++){
+    // Iterate over all rows of the matrix
+    for(int l = 0; l < N; l++){
+      // Itertae over all columns of the matrix
+      for(int m = 0; m < N; m+= float_v::Size) {
+        // Using reinterpret_cast we convert scalar float array elements to  Vc float vector type
+        float_v &aVec = (reinterpret_cast<float_v&>(a[l][m]));
+        // Using reinterpret_cast we convert c_simdVc array elements to  Vc float vector type
+        float_v &cVec = (reinterpret_cast<float_v&>(c_simdVc[l][m]));
+        // Applying the square root template function to the Vc float  vector and storing it in cVec
+        cVec = f(aVec);
+\end{lstlisting} \\
+
+The resulting output shows a marked speed up of 4.89 resulting from the use of the Vc implementation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{matrix_vc_output.png} 
+    \caption{Output}
+    \label{fig:example}
+  \end{figure}
+  
+
 \section{Quadratic Equation}
+In this exercise we had to complete code solving a set of quadratic equations using both scalar operations and SIMD operations using the Vc library. In the scalar calculations section, a loop iterates over a set of quadratic equations, and for each equation, the code calculates the discriminant and the root using the quadratic formula. In the SIMD  sections, there are two loops, one using Vc and operating on vectors of 'a', 'b', and 'c' coefficients. It copies the coefficients from the input data structure, performs the calculations using Vc vectors, and then copies the roots back to the input data structure.
+The second loop also utilizes Vc, but instead of copying the coefficients, it reinterprets the memory of the input data structure as Vc vectors directly. This avoids the need for explicit copying and improves performance. The calculations are performed using the SIMD operations, and the roots are stored back in the input data structure. Here is part of the modified code:  
+
+\begin{lstlisting}[caption=QuadraticEquation.cpp]
+ // SIMD calculations with Vc using dataSIMD3 as input (use cast here)
+  TStopwatch timerSIMD3;
+  for (int io = 0; io < NIterOut; io++)
+    for (int i = 0; i < NVectors; i++)
+    {
+      // Using reinterpret_cast we reinterpret the memory representation of the input data-structure as Vc vectors
+      float_v &aV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].a));
+      float_v &bV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].b));
+      float_v &cV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].c));
+      float_v &xV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].x));
+
+      // We calculate the discriminant and roots here using SIMD operations
+      const float_v det = bV * bV - 4 * aV * cV;
+      xV = (-bV + sqrt(det)) / (2 * aV);
+    }
+  timerSIMD3.Stop();
+\end{lstlisting} \\
+
+The resulting output reveals that there is a sizeable speedup compared to the scalar calculations,  demonstrating the effectiveness of the use of SIMD operations and the Vc library to efficiently solve multiple quadratic equations in parallel, taking advantage of vectorized instructions for improved performance.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{qe_out.png} 
+    \caption{Output}
+    \label{fig:example}
+  \end{figure}
+
+
 \section{Newton}
 In this task we have to vectorize the Newton method. As mentioned in the task description
 the Newton Method is an interative process to approximate the x-axis intersection. \\[5mm]
