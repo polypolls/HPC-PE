@@ -109,8 +109,36 @@ The next iteration will only update those values, which need further refinement 
         \end{tikzpicture}
     \end{center}   
 \end{figure}
-
+\newpage
 \section{Random Access}
+The first part of this exercise is done by gathering the data from the input
+arry to the tmp float\_v variable according to the index array. This is done
+by initializing a uint\_v vector and it's corresponding indexes. If this is
+done, the goal of the subtask can be achieved by running the gather function:\\
+\begin{lstlisting}[caption=gathering data]
+    tmp.gather(input, ind);
+\end{lstlisting}
+Now we want to filter the data - from the tmp variable every value larger than
+0.5. Therefore we create a specific mask with the following code:
+float\_m mask = tmp $>$ 0.5f;\\
+With this mask, and a new initialized variable, where we want to safe the data,
+we can run the "gather" function again, with adapted parameters:\\
+\begin{lstlisting}[caption=gathering filtered data]
+    tmp2.gather(input, ind, mask);
+\end{lstlisting}
+The last part of this exercise is to put the data from the tmp float\_v variable
+to the ouput array, when it satisfies a given condition.
+The condition is, that all values from tmp, that are smaller than 0.5, are 
+put to the array "ouput" at the places given by indices.\\
+We could create a new mask, but because this mask's type is identical to
+the mask above (and because the solutions does it like this), we reuse the mask
+(of course with adjusted filter $<$ 0.5).\\
+Lastly one can just use the scatter function with the added parameters to get the
+wished results to the tmp variable.
+\begin{lstlisting}[caption=scattering]
+    tmp.scatter(input, ind, mask);
+\end{lstlisting}
+
 
 \begin{figure}[H]
     \centering

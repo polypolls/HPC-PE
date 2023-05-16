@@ -1,11 +1,7 @@
-  /// Gather and scatter functions
-  ///
   /// @authors: I.Kulakov; M.Zyzak
   /// @e-mail I.Kulakov@gsi.de; M.Zyzak@gsi.de
   /// 
-  /// use "g++ RandomAccess.cpp -O3 -lVc; ./a.out" to run
-
-  // TODO: finish the programm
+  /// use "g++ RandomAccess_solution.cpp -O3 -lVc; ./a.out" to run
 
 #include <Vc/Vc>
 using namespace Vc;
@@ -46,12 +42,12 @@ int main() {
   for(int i=0; i<float_v::Size; i++)
     cout << index[i] << " ";
   cout << endl;
-  
-    /// gather without masking
-  float_v tmp;
-  //TODO gather data with indices "index" from the array "input" into float_v tmp
-  // Use void  gather (const float *array, const uint_v &indexes)
 
+  /// gather without masking  
+  float_v tmp;
+
+  uint_v ind(index);
+  tmp.gather(input,ind);
   
   //check results
   bool ok = 1;
@@ -63,11 +59,14 @@ int main() {
   else   cout << "WRONG." << endl;
 
     /// gather with masking
-  float_v tmp2;
   //TODO gather data with indices "index" from the array "input" into float_v tmp2, if the value of "input" large then 0.5
   // Use void  gather (const float *array, const uint_v &indexes, const float_m &mask)
 
-  
+
+  float_m mask = tmp > 0.5f;
+  float_v tmp2(Vc::Zero);
+  tmp2.gather(input, ind, mask);
+
   //check results
   ok = 1;
   for(int i=0; i<float_v::Size; i++) {
@@ -88,9 +87,13 @@ int main() {
   if(ok) cout << "correct." << endl;
   else   cout << "WRONG." << endl;
   
+
   //TODO create mask for values for an obtained tmp values, which are large than 0.5 and
   //TODO put all values smaller than 0.5 from tmp to the array "output" at the places given by indices "index"
   // Use void scatter (float *array, const uint_v &indexes, const float_m &mask) const
+
+  mask = tmp < 0.5f;
+  tmp.scatter(output, ind, mask);
 
     //check results
   ok = 1;
