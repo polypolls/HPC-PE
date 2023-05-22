@@ -1,0 +1,74 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{pgfplots}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{hyperref}
+
+\title{\textbf{High Performance Computer Architectures Practical Course \\ - Exercise 5 -} \\[10mm]}
+\author{Tutorium 1 \\[10mm] David Jordan (6260776) \\[1mm] Florian Rüffer (7454628) \\[1mm] Michael Samjatin (7485765) \\[10mm]}
+
+
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    commentstyle=\color{green},
+    numbers=left,
+    numberstyle=\normalsize,
+    breaklines=true,
+    showstringspaces=false,
+    frame=single,
+    linewidth=1\linewidth,
+    captionpos=b
+}
+\renewcommand{\lstlistingname}{File}% Listing -> Algorithm
+\renewcommand{\lstlistlistingname}{List of \lstlistingname s}% List of Listings -> List of Algorithms
+
+\begin{document}
+\maketitle
+\newpage
+\section{Section XYZ}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{example-image.png} 
+    \caption{Output}
+    \label{fig:example}
+  \end{figure}
+  
+
+\begin{lstlisting}[caption=QuadraticEquation.cpp]
+ // SIMD calculations with Vc using dataSIMD3 as input (use cast here)
+  TStopwatch timerSIMD3;
+  for (int io = 0; io < NIterOut; io++)
+    for (int i = 0; i < NVectors; i++)
+    {
+      // Using reinterpret_cast we reinterpret the memory representation of the input data-structure as Vc vectors
+      float_v &aV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].a));
+      float_v &bV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].b));
+      float_v &cV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].c));
+      float_v &xV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].x));
+
+      // We calculate the discriminant and roots here using SIMD operations
+      const float_v det = bV * bV - 4 * aV * cV;
+      xV = (-bV + sqrt(det)) / (2 * aV);
+    }
+  timerSIMD3.Stop();
+\end{lstlisting}
+
+
+
+
+
+
+
+\end{document}
