@@ -377,13 +377,13 @@ int main(){
   
 #else
   
-    // Convert scalar Tracks to SIMD-tracks
+    
   const int NVTracks = NTracks/fvecLen;
   LFTrack<fvec,fvec> vTracks[NVTracks];
   
   CopyTrackHits( tracks, vTracks, NVTracks );
   
-    // fit
+    
   LFFitter<fvec,fvec> fit;
 
   fit.SetSigma( Sigma );
@@ -399,10 +399,10 @@ int main(){
   timer.Stop();
 #endif
   
-    // Convert  SIMD-tracks to scalar Tracks
+    
   CopyTrackParams( vTracks, tracks, NVTracks );
   
-#endif // SIMDIZED
+#endif 
     
       /// ---- SAVE RESULTS ---
 

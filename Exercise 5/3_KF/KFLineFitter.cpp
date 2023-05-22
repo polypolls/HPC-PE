@@ -16,6 +16,10 @@
 #include <cmath>
 #include <vector>
 
+
+#ifdef SIMDIZED
+#include "../../../vectors/P4_F32vec4.h"
+
 #ifdef TIME
 #include "../../../TStopwatch.h"
 #endif
@@ -290,9 +294,9 @@ int main(){
   LFTrack tracks[NTracks];
 
   for ( int i = 0; i < NTracks; ++i ) {
-    LFTrack &track = tracks[i];
+    LFTrack<float,int> &track = tracks[i];
     
-    LFTrackParam par;
+    LFTrackParam<float> par;
     par.Z() = 0;
     par.X()  = (float(rand())/RAND_MAX-0.5)*5;
     par.Tx() = (float(rand())/RAND_MAX-0.5)*0.2;
@@ -303,8 +307,9 @@ int main(){
 
     ///  ---- GET FITTED TRACKS -----  
   TStopwatch timer;
+#ifndef SIMDIZED
   
-  LFFitter fit;
+  LFFitter<float,int> fit;
 
   fit.SetSigma( Sigma );
   
@@ -312,12 +317,41 @@ int main(){
   timer.Start(1);
 #endif 
   for ( int i = 0; i < NTracks; ++i ) {
-    LFTrack &track = tracks[i];
+    LFTrack<float,int> &track = tracks[i];
+    fit.Fit( track );
+  }
+  #ifdef TIME
+  timer.Stop();
+  #endif
+  
+#else
+  
+    
+  const int NVTracks = NTracks/fvecLen;
+  LFTrack<fvec,fvec> vTracks[NVTracks];
+  
+  CopyTrackHits( tracks, vTracks, NVTracks );
+  
+    
+  LFFitter<fvec,fvec> fit;
+
+  fit.SetSigma( Sigma );
+  
+#ifdef TIME
+  timer.Start(1);
+#endif
+  for ( int i = 0; i < NVTracks; ++i ) {
+    LFTrack<fvec,fvec> &track = vTracks[i];
     fit.Fit( track );
   }
 #ifdef TIME
   timer.Stop();
 #endif
+  
+    
+  CopyTrackParams( vTracks, tracks, NVTracks );
+  
+#endif 
      
       /// ---- SAVE RESULTS ---
 
@@ -326,7 +360,7 @@ int main(){
   fout.open("output",fstream::out);
   
   for ( int i = 0; i < NTracks; ++i ) {
-    LFTrack &track = tracks[i];
+    LFTrack<float,int> &track = tracks[i];
     fout << i << endl; // << "Track: " 
     fout  << track.mcPoints.back().Z() << " " << track.mcPoints.back().X() << " " << track.mcPoints.back().Tx() << endl; // << "MC   : "
     fout << track.rParam.Z() << " " << track.rParam.X() << " " << track.rParam.Tx() << endl; // << "Reco: "

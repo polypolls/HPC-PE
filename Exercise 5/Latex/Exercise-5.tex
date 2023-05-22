@@ -36,8 +36,72 @@
 \begin{document}
 \maketitle
 \newpage
-\section{Section XYZ}
+\section*{Line 324-430}
+First of all the geometry is set up, containing the number of stations / particles, the distance between those stations and the hit distribution.
+Those values will result in a linearly spaced distribution of stations along the z-axis.
+This simulates a set of tracks with random starting positions and slopes. \\
 
+\noindent Next up, we need to get our tracks fitted, to determine the most probable
+trajectory of a particle. For this we need to define the SIMD-ized version of the fitting process or
+it will be computed in a scalar way.
+
+\begin{lstlisting}[caption=KFLineFitter.cpp]
+  const int NVTracks = NTracks/fvecLen;
+  LFTrack<fvec,fvec> vTracks[NVTracks];
+  
+  CopyTrackHits( tracks, vTracks, NVTracks );
+  
+    
+  LFFitter<fvec,fvec> fit;
+
+  fit.SetSigma( Sigma );
+  
+#ifdef TIME
+  timer.Start(1);
+#endif
+  for ( int i = 0; i < NVTracks; ++i ) {
+    LFTrack<fvec,fvec> &track = vTracks[i];
+    fit.Fit( track );
+  }
+#ifdef TIME
+  timer.Stop();
+#endif
+  
+    
+  CopyTrackParams( vTracks, tracks, NVTracks );
+  
+#endif
+\end{lstlisting}
+
+\noindent In the first line we calculate the number of vectorized tracks, to assign it to our
+list of vectorized tracks in the next line (as the length). In the following steps and lines of code,
+we transform our scalar track data into a SIMD vector, fit the tracks parameter to the measure data points
+and add Sigma (uncertainty) to our simulation.
+The for-loop then iterates over every vectorized track to fit multiple tracks simultaneously.
+Last but not least we copy our tracks back to their original format (line 23).
+Especially the functions CopyTrackHits and CopyTrackParams are of interest.
+This function iterates over the grouped tracks and for those over each hit for every track.
+All tracks have the same number of hits, those correspond to the number of stations, therefore
+we can treat this parameters as a constant.
+For CopyTrackParams we need to iterate over the vectorized tracks and their entries, as well as the
+elements of the covariance matrix. \\
+
+\noindent The last lines of code save our results.
+If an output file is defined, then the program will output the parameters and covariance matrices for every track.
+The output will be stored in the defined file and will look like this:
+\begin{lstlisting}[caption=Output]
+  0 
+  90 -9.13228 -0.0736924
+  90 -9.03232 -0.0722956
+  0.0862335 0.00135828 3.00843e-05
+\end{lstlisting}
+Here we will list the line and its corresponding explanation (index number corresponds to line in the output):
+\begin{enumerate}
+  \item Track index, which increments by one for every track
+  \item True values of the parameters (Monte Carlo truth)
+  \item Reconstructed / fitted values for the same parameters
+  \item Covariance matrix for the fitted parameters
+\end{enumerate}
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.3]{example-image.png} 
@@ -45,25 +109,6 @@
     \label{fig:example}
   \end{figure}
   
-
-\begin{lstlisting}[caption=QuadraticEquation.cpp]
- // SIMD calculations with Vc using dataSIMD3 as input (use cast here)
-  TStopwatch timerSIMD3;
-  for (int io = 0; io < NIterOut; io++)
-    for (int i = 0; i < NVectors; i++)
-    {
-      // Using reinterpret_cast we reinterpret the memory representation of the input data-structure as Vc vectors
-      float_v &aV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].a));
-      float_v &bV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].b));
-      float_v &cV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].c));
-      float_v &xV = *(reinterpret_cast<float_v *>(dataSIMD3.data[i].x));
-
-      // We calculate the discriminant and roots here using SIMD operations
-      const float_v det = bV * bV - 4 * aV * cV;
-      xV = (-bV + sqrt(det)) / (2 * aV);
-    }
-  timerSIMD3.Stop();
-\end{lstlisting}
 
 
 
