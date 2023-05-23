@@ -91,12 +91,12 @@ template< typename T, typename I >
 struct LFTrack {
   vector< LFPoint<T> > hits;
   
-  LFTrackParam<T> rParam; // reconstructed by the fitter track parameters
-  LFTrackCovMatrix<T> rCovMatrix; // error (or covariance) matrix
-  T chi2;   // chi-squared deviation between points and trajectory
-  I ndf;    // number degrees of freedom
+  LFTrackParam<T> rParam;
+  LFTrackCovMatrix<T> rCovMatrix;
+  T chi2;
+  I ndf;
 
-  vector< LFTrackParam<T> > mcPoints; // simulated track parameters
+  vector< LFTrackParam<T> > mcPoints;
 };
 
 #ifdef SIMDIZED

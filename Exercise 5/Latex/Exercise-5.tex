@@ -36,7 +36,57 @@
 \begin{document}
 \maketitle
 \newpage
-\section*{Line 324-430}
+\section{First Third}
+
+First and foremost, we must decide which data should be
+grouped and how it should be grouped in order to vectorize
+the track fitting procedure.
+To achieve maximum independence, M tracks can be handled simultaneously.
+The procedure involves:
+
+\begin{enumerate}
+\item Initializing M tracks.
+\item Extrapolating M tracks to the first station.
+\item Estimating track parameters using M hits (one hit per track).
+\item Extrapolating M tracks to the second station.
+\item Continuing extrapolation to the z-coordinate of the last mc point, shared by all tracks.
+\end{enumerate}
+
+To execute these steps, hits from different tracks should be grouped
+into a single vector, where each group corresponds to a specific station.
+The class representing the group should include a vector of M x-coordinates
+for the hits, along with a scalar representing their z-coordinate. The
+general type for grouping M floats together is denoted as T, allowing
+for the substitution of fvec and float types using templates
+(see "struct LFPoint" in code).\\
+-$>$ M track parameters in one vectorized parameters class
+
+The x parameters and covariance elements
+are grouped together, while the z-coordinate remains
+scalar. The grouping allows for efficient processing
+of M floats, denoted as T, using templates.
+
+Because of the different chi-squared deviation and the
+NDF for the different tracks, we need a vector type.
+You can see this done here:\\
+\begin{lstlisting}[caption=KFLineFitter.cpp]
+  template< typename T, typename I >
+  struct LFTrack {
+    vector< LFPoint<T> > hits;
+    
+    LFTrackParam<T> rParam;
+    LFTrackCovMatrix<T> rCovMatrix;
+    T chi2;
+    I ndf;
+  
+    vector< LFTrackParam<T> > mcPoints;
+  };
+\end{lstlisting}
+
+\section*{Second Third}
+
+
+\section*{Third Third}
 First of all the geometry is set up, containing the number of stations / particles, the distance between those stations and the hit distribution.
 Those values will result in a linearly spaced distribution of stations along the z-axis.
 This simulates a set of tracks with random starting positions and slopes. \\
@@ -44,6 +94,8 @@ This simulates a set of tracks with random starting positions and slopes. \\
 \noindent Next up, we need to get our tracks fitted, to determine the most probable
 trajectory of a particle. For this we need to define the SIMD-ized version of the fitting process or
 it will be computed in a scalar way.
+
+
 
 \begin{lstlisting}[caption=KFLineFitter.cpp]
   const int NVTracks = NTracks/fvecLen;
