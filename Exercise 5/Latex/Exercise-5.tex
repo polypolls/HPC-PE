@@ -84,6 +84,28 @@ You can see this done here:\\
 \end{lstlisting}
 
 \section*{Second Third}
+The Code in this excerpt of the program simulates and fits tracks in the program's tracking system.  The LFGeometry struct stores the geometry of the tracking system, that is the z-value of each of the stations. A staion here refers to the individual measurement points in the tracking system where hits can be made. The LFSimulator class simulates the tracks using the given set of parameters. its simulation functions generate the simulated tracks, by creating MOnte Carlo points for each station and distributing the potential hits based on the sigma value. The thereby simulated tracks are stored in the LFTrack objects.  
+The LFFitter class fits the simulated tracks. Fitting here describes the process of finding the best-fit parameters of the underlying model that can describe the trajectory of the particle being tracked by the system. The Initialise function initialises the track parameters and the covariance matrix of the track object. It does this before the fitting process. The Fit function takes a track object as an argument, and utiliyes the simulated hits stored in the track object to refine the track parameters and thereby obtain a best fit. The Extrapolate function extrapolates the track parameters to a given z-value. The Filter function compares the simulated hit position with the predicted position from the track parameters, calculates the difference between the two, and updates the covariance matrix on the basis of this comparison. The LFFitter classapplies the fitting algorithm iteratively, with the goal of finding the best fit to the observed hits and thereby leading to a better description of the particle's trajectory.
+The whole excerpt defines the necessary data structures for simulating tracks and fitting the simulated tracks with a Fitter.
+\\
+\begin{lstlisting}[LFSSimulator Excerpt]
+ class LFSimulator
+{
+public:
+  // the constructor
+  LFSimulator() : fGeometry(), fSigma(DSigma)
+  {
+    fGeometry.zs.resize(DNStations);
+    // loop to calculate the z coordinate for each station,
+    // giving the geometric information necessary for
+    // further tracking
+    for (int i = 0; i < DNStations; ++i)
+      fGeometry.zs[i] = (DDZ * static_cast<float>(i));
+  };
+  // Destructor
+  ~LFSimulator(){};
+  ...
+\end{lstlisting}
 
 
 \section*{Third Third}
