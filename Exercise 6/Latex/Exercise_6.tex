@@ -35,6 +35,29 @@
 \begin{document}
 \maketitle
 \newpage
+\section*{Section FittingDemoSimple\_0}
+The 'fitFunction' function has the purpose to define the funtional form of the background model. This model will then be fitted to the histogram data. Root framework will attempt to find the best fit of the parameters so that the difference between the histogram data and the model is minimized.
+In the 'FittingDemoSimple0' function we create the canvas to display the ROOT objects, we fill it with 1 000 000 random numbers we generate. 
+We create a TF1, which represents the quadratic function defined earlier. The histogram is then fitted with the Fit method of the histogram. 
+So the program has in effect created a histogram filled with random numbers from a triangular distribution, which is then fitted with a quadratic function. The graph it creates shows this fitted quadratic function overlaid over the histogram, in order to show how well the function fits the data.
+
+Below we can see the output graphs:
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{graph.png} 
+    \caption{Histogram}
+    \label{fig:graph}
+  \end{figure}
+
+And the output metrics:
+
+ \begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{metrics.png} 
+    \caption{Histogram}
+    \label{fig:graph}
+    \end{figure}
+
 \section*{Section 1}
 
 First and foremost, we must decide which data should be
