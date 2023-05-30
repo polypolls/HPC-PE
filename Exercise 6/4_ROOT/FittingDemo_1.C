@@ -9,10 +9,23 @@
 #include "TLegend.h"
 #include "TCanvas.h"
 
-// Quadratic background function
+// // Quadratic background function
+// Double_t background(Double_t *x, Double_t *par) {
+//    return par[0] + par[1]*x[0] + par[2]*x[0]*x[0];
+// }
+
+// Double_t background(Double_t *x, Double_t *par) {
+//    return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0];
+// }
+
+// Double_t background(Double_t *x, Double_t *par) {
+//    return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0] + par[4]*x[0]*x[0]*x[0]*x[0];
+// }
+
 Double_t background(Double_t *x, Double_t *par) {
-   return par[0] + par[1]*x[0] + par[2]*x[0]*x[0];
+   return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0] + par[4]*x[0]*x[0]*x[0]*x[0] + par[5]*x[0]*x[0]*x[0]*x[0]*x[0] + par[6]*x[0]*x[0]*x[0]*x[0]*x[0]*x[0];
 }
+
 
 
 // Lorenzian Peak function
