@@ -14,17 +14,17 @@
 //    return par[0] + par[1]*x[0] + par[2]*x[0]*x[0];
 // }
 
-// Double_t background(Double_t *x, Double_t *par) {
-//    return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0];
-// }
+Double_t background(Double_t *x, Double_t *par) {
+   return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0];
+}
 
 // Double_t background(Double_t *x, Double_t *par) {
 //    return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0] + par[4]*x[0]*x[0]*x[0]*x[0];
 // }
 
-Double_t background(Double_t *x, Double_t *par) {
-   return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0] + par[4]*x[0]*x[0]*x[0]*x[0] + par[5]*x[0]*x[0]*x[0]*x[0]*x[0] + par[6]*x[0]*x[0]*x[0]*x[0]*x[0]*x[0];
-}
+// Double_t background(Double_t *x, Double_t *par) {
+//    return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0] + par[4]*x[0]*x[0]*x[0]*x[0] + par[5]*x[0]*x[0]*x[0]*x[0]*x[0] + par[6]*x[0]*x[0]*x[0]*x[0]*x[0]*x[0];
+// }
 
 
 
@@ -57,7 +57,7 @@ void FittingDemo_1() {
    c1->SetGrid();
    
    TH1F *histo = new TH1F("histo",
-      "Lorentzian Peak on Quadratic Background",60,0,3);
+      "Lorentzian Peak on third order Background",60,0,3);
    histo->SetMarkerStyle(21);
    histo->SetMarkerSize(0.8);
    histo->SetStats(0);
