@@ -56,19 +56,13 @@ And the output metrics:
     \includegraphics[scale=0.3]{metrics.png} 
     \caption{Histogram}
     \label{fig:graph}
-    \end{figure}
+\end{figure}
 
-\section*{Section 1}
-
-First and foremost, we must decide which data should be
-grouped and how it should be grouped in order to vectorize
-the track fitting procedure.
-To achieve maximum independence, M tracks can be handled simultaneously.
-The procedure involves:
 
 \section*{FittingDemo\_1}
 To accomplish this task we need to adjust the polynomial order of our background function
-to the order of three, four and six. We do this with the following code snippets: \\[3mm]
+to the order of three, four and six. We do this with the following code snippets, located in the file
+"FittingDemo\_1.C": \\[3mm]
 
 \begin{lstlisting}[caption=Order 3]
     Double_t background(Double_t *x, Double_t *par) {
@@ -92,6 +86,28 @@ to the order of three, four and six. We do this with the following code snippets
 
 In the code snippets above the function 'background' takes two parameters x and the value par, which denotes
 an array of parameters (six in total).
+Below you can see the resulting plots.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{3-order.png} 
+    \caption{3-order}
+    \label{fig:graph}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{4-order.png} 
+    \caption{4-order}
+    \label{fig:graph}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{6-order.png} 
+    \caption{6-order}
+    \label{fig:graph}
+\end{figure}
 
   
 \end{document}
