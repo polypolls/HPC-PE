@@ -37,7 +37,39 @@
 \newpage
 \section*{Section 1}
 \section*{Section 2}
-\section*{Section 3}
+\section{Pi}
+\subsection{omp parallel and OpenMP}
+First, we need to specify the number of threads (in this case 2) and a
+variable to store the sums, that are calculated by each thread. Therefore
+the array has the lengt of the number of threads, initialized with the
+value 0:
+\begin{lstlisting}[caption=]
+    const int nThreads = 2;
+    double sums[nThreads] = {0};
+\end{lstlisting}
+Another important task is to save the id of the threads, so that they
+can be addressed and saved correctly in the "cache-sum-list".
+Because we split these steps into 2 threads, each thread only needs
+to calculate one half \\(steps / thread\_count). On last thing to pay
+attention is the calculation of x. Here we need to factor in the offset
+for the current thread. Last but not least we need to calculate the sums
+in the "cache-sum-list" and do the final computations.
+
+\subsection*{Least amount of changes}
+This can quickly be done by adding one line of code before the loop:
+\begin{lstlisting}[caption=]
+    #pragma omp parallel for reduction(+ : sum) private(i,x)
+\end{lstlisting}
+The variables x and i are declared as private variables for safety reasons,
+so that they do not interfer with each other. In the solution sum is
+declared as one value, and not a list - this is probably for better
+data consistency and the correctnerss of the final result.\\
+One another advantage of OpenMP is the correctness of the code even if the library
+is disabled.
+
+
+
+
 \section*{Section 4}
 
 \begin{lstlisting}[caption=Order 3]

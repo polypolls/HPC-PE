@@ -13,8 +13,6 @@ History: Written by Tim Mattson, 11/99.
 
 */
 
-// TODO: 1. parallelize with OpenMP using only #pragma omp parallel
-//       2. parallelize with OpenMP making as small changes in the program as possible
 
 #include <stdio.h>
 #include <omp.h>
@@ -28,9 +26,10 @@ int main ()
   double start_time, run_time;
 
   step = 1.0/(double) num_steps;
-           
+         
   start_time = omp_get_wtime();
 
+#pragma omp parallel for reduction(+ : sum) private(i,x)
   for (i=1;i<= num_steps; i++){
     x = (i-0.5)*step;
     sum = sum + 4.0/(1.0+x*x);
@@ -39,4 +38,9 @@ int main ()
   pi = step * sum;
   run_time = omp_get_wtime() - start_time;
   printf("\n pi with %d steps is %f in %f seconds \n",num_steps,pi,run_time);
-}    
+}  
+
+
+
+
+
