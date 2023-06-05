@@ -44,15 +44,14 @@ int main() {
   }
   
   sum = 0;
-  #pragma omp parallel firstprivate(N) num_threads(NThreads)
   {
-    #pragma omp for nowait
+
     for(int i=0; i<N; i++)
     {
-      #pragma omp atomic
       sum += input[i];
     }
-
+    
+    #pragma omp parallel firstprivate(N) num_threads(NThreads)
     #pragma omp for 
     for(int i=0; i<N; i++)
       outputParallel[i] = input[i]/sum;

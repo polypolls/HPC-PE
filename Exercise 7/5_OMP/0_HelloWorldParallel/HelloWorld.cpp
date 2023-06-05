@@ -10,13 +10,21 @@
 // 3. Get the id of a current thread and print it out
 
 
+#include <omp.h>
 #include <iostream>
 using namespace std;
 
 int main() {
 
-  int id = 0;
-  cout << " Hello world " << id << endl;
+  #pragma omp parallel num_threads(10)
+  {
+    int id = omp_get_thread_num();
+    
+    #pragma omp critical
+    {
+    cout << " Hello world " << id <<  endl;
+    }
+  }
 
   return 0;
 }

@@ -35,24 +35,187 @@
 \begin{document}
 \maketitle
 \newpage
-\section*{Section 1}
-\section*{Section 2}
+\section*{0\_HelloWorldParallel}
+In this task we need to parallelize a HelloWorld program with OpenMP.
+We start of by creating 10 threads (line 3):
+
+\begin{lstlisting}[caption=Step 1]
+    int main() {
+
+    #pragma omp parallel num_threads(10)
+    {
+      int id = 0;
+      
+      cout << " Hello world " << id <<  endl;
+    }
+  
+    return 0;
+  }
+  
+}
+\end{lstlisting}
+This creates a more or less unexptected output, which can be traced back to the threads not being synchronized.
+To solve this issue, we will synchronize our threads by adding 'omp critical' to the parallel environmnet (line 7):
+
+\begin{lstlisting}[caption=Step 2]
+    int main() {
+
+    #pragma omp parallel num_threads(10)
+    {
+      int id = 0;
+      
+      #pragma omp critical
+      {
+      cout << " Hello world " << id <<  endl;
+      }
+    }
+  
+    return 0;
+  }
+  
+\end{lstlisting}
+
+We still need to get the id of our threads, to know which thread computed which output.
+Basically which 'Hello World' is printed out by which one of the ten threads.
+To do this we get the thread id like this (line 5):
+\begin{lstlisting}[caption=Step 2]
+    int main() {
+
+    #pragma omp parallel num_threads(10)
+    {
+      int id = omp_get_thread_num();
+      
+      #pragma omp critical
+      {
+      cout << " Hello world " << id <<  endl;
+      }
+    }
+  
+    return 0;
+  }
+\end{lstlisting}
+At this point we can compare what happens, if we forget to properly synchronize our threads.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{no-critical.png} 
+    \caption{w/o synchronization}
+    \label{fig:graph}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{with-critical.png} 
+    \caption{w/ synchronization}
+    \label{fig:graph}
+\end{figure}
+We can see that the id's are completely out of order, if the leave the synchronization out.
+By adding it the output is perfectly in order.
+\section*{1\_Bugs}
+In this task we will examine four bugs and how to fix them.
+\subsection*{Bug1}
+If we run this code, we receive an error telling us, that the output array we tried to copy is not correct.
+This can be fixed by editing the following lines of code:
+\begin{lstlisting}[caption=Step 2]
+  #pragma omp parallel firstprivate(N) num_threads(NThreads)
+  {
+      #pragma omp for 
+      for(int i=0; i<N; i++)
+      output[i] = input[i];
+      }
+\end{lstlisting}
+Especially changing line 1 to firstprivate instead of just private.
+This error occurs because 'private' is not initializing the values properly.
+With 'private' each thread has its own local copy of the value, but it is not kept while entering or exiting the private region
+and therefore also does not effect the value of the variable in the 'master thread'.
+\subsection*{Bug2}
+Again our output array is not correct.
+Now the problem lies in the tmp variable of this code snippet:
+\begin{lstlisting}[caption=Step 2]
+tmp = 0;
+#pragma omp parallel num_threads(NThreads)
+{
+  #pragma omp for 
+  for(int i=1; i<N; i++)
+  {
+    tmp += i;
+    outputParallel[i] = float(tmp)/float(i);
+  }
+}
+\end{lstlisting}
+The variable tmp will be used by multiple threads, leading to multiple threads updating the same value at the same time.
+This will lead to a corrupted variable and incorrect results.
+To solve this issue we need to make the calculation independent from the iteration (independent from the results of previous iterations).
+
+\begin{lstlisting}[caption=Step 2]
+    tmp = 0;
+    #pragma omp parallel num_threads(NThreads)
+    {
+      #pragma omp for 
+      for(int i=1; i<N; i++)
+      {
+        float tmp = (1+i)*i/2; // arithmetical progression
+        outputParallel[i] = float(tmp)/float(i);
+      }
+    }
+    \end{lstlisting}
+\subsection*{Bug3}
+Here the problem can be found in line 4.
+By using 'nowait' lines 12 and 13 can be executed before the sum calculation (in line 8) is finished.
+
+\begin{lstlisting}[caption=Step 2]
+    sum = 0;
+    #pragma omp parallel firstprivate(N) num_threads(NThreads)
+    {
+      #pragma omp for nowait
+      for(int i=0; i<N; i++)
+      {
+        #pragma omp atomic
+        sum += input[i];
+      }
+  
+      #pragma omp for 
+      for(int i=0; i<N; i++)
+        outputParallel[i] = input[i]/sum;
+    }
+\end{lstlisting}
+To fix this we can cut out the 'nowait' completely.
+So we calculate the sum first and then continue with filling 'outputParallel'
+\begin{lstlisting}[caption=Step 2]
+    sum = 0;
+    {
+  
+      for(int i=0; i<N; i++)
+      {
+        sum += input[i];
+      }
+      
+      #pragma omp parallel firstprivate(N) num_threads(NThreads)
+      #pragma omp for 
+      for(int i=0; i<N; i++)
+        outputParallel[i] = input[i]/sum;
+    }
+\end{lstlisting}
+\subsection*{Bug4}
+By using 'nowait' in the previous bug, we didn't wait for relevant code to finish calculations properly.
+Now we need to add a barrier to ensure, that relevant calculations finish before other start.
+\begin{lstlisting}[caption=Step 2]
+
+    #pragma omp atomic
+    sum += sumLocal;
+    
+    #pragma omp barrier
+    
+    #pragma omp for
+    for(int i=0; i<N; i++)
+    outputParallel[i] = input[i]/sum;
+    }
+\end{lstlisting}
+Here we place a barrier just after the final sum calculations.
+It is crucial for the sum to finish, before other calculations (which use the sum) can start.
+As this is just an excerpt, we would need to add this line right after line 72 in the original code.
+
 \section*{Section 3}
 \section*{Section 4}
 
-\begin{lstlisting}[caption=Order 3]
-    Double_t background(Double_t *x, Double_t *par) {
-   return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0];
-}
-
-\end{lstlisting}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.3]{example-image.png} 
-    \caption{6-order}
-    \label{fig:graph}
-\end{figure}
 
   
 \end{document}

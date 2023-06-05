@@ -71,6 +71,8 @@ int main() {
     #pragma omp atomic
     sum += sumLocal;
 
+    #pragma omp barrier
+    
     #pragma omp for
     for(int i=0; i<N; i++)
       outputParallel[i] = input[i]/sum;

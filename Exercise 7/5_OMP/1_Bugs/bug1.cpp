@@ -30,7 +30,7 @@ int main() {
     input[i] = float(rand())/float(RAND_MAX); // put a random value, from 0 to 1
   } 
 
-  #pragma omp parallel private(N) num_threads(NThreads)
+  #pragma omp parallel firstprivate(N) num_threads(NThreads)
   {
     #pragma omp for 
     for(int i=0; i<N; i++)

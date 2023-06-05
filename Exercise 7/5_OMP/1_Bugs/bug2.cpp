@@ -39,7 +39,7 @@ int main() {
     #pragma omp for 
     for(int i=1; i<N; i++)
     {
-      tmp += i;
+      float tmp = (1+i)*i/2;
       outputParallel[i] = float(tmp)/float(i);
     }
   }
