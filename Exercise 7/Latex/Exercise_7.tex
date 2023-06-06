@@ -213,9 +213,6 @@ Here we place a barrier just after the final sum calculations.
 It is crucial for the sum to finish, before other calculations (which use the sum) can start.
 As this is just an excerpt, we would need to add this line right after line 72 in the original code.
 
-\section*{Section 3}
-\section*{Section 1}
-\section*{Section 2}
 \section{Pi}
 \subsection{omp parallel and OpenMP}
 First, we need to specify the number of threads (in this case 2) and a
@@ -249,8 +246,19 @@ is disabled.
 
 
 
-\section*{Section 4}
+\section*{Matrix}
+By adding the rather simple directive before the for loops beginning in line 88:
+\begin{lstlisting}[caption=]
+    #pragma omp parallel for num_threads(omp_get_num_procs())
+\end{lstlisting}
+we can parallelize the for loop. Since there do not appear to be significant dependencies the process can be parallelized, a speed up in the matrix calculation compared to the scalar version can be achieved, as seen in the following output:
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{matrix_output.png} 
+    \caption{matrix calculation speed up}
+    \label{fig:graph}
+\end{figure}
+However it does appear that there were some dependencies, because the Vc speed up is slightly higher with 4.1977 than OpenMP's 3.60022 speed up factor. 
 
 
-  
 \end{document}
