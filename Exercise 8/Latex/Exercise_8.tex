@@ -39,7 +39,132 @@
 \subsection*{Part 1}
 \subsection*{Part 2}
 \subsection*{Part 3}
+In this part we need to SIMDize the program. \\
+We start off by creating the vector\_add\_kernel2.cl file,
+which contains code to utilize SIMD capabilities.
+
+\begin{lstlisting}[caption=vector\_add\_kernel2.cl]
+    __kernel void vector_add(__global float *A, __global float *B, __global float *C) {
+    
+    
+    int i = get_global_id(0);
+
+    
+    float4 a = vload4(i, A);
+    float4 b = vload4(i, B);
+
+    
+    vstore4( a + b, i, C );
+}
+\end{lstlisting}
+
+\noindent The first line defines a kernel function, which can be executed on an OpenCL device. \\
+The function takes three parameters (A, B, C), which can be located in the global memory space.
+Furthermore line 4 gets the id is of the current work item and assigns the i-th group of A, B and C to it.
+In this case A, B and C are vectors with 4 elements each (line 7,8). \\
+Finally line 11 stores the computed values into the $4 \cdot i$ element. \\
+\newpage
+\noindent Subsequently we will add / load this kernel to our code in the main.cpp file.
+
+\begin{lstlisting}[caption=main.cpp]
+#ifdef SIMD
+    fp = fopen("vector_add_kernel2.cl", "r");
+#else
+    fp = fopen("vector_add_kernel.cl", "r");
+#endif
+    if (!fp) {
+        fprintf(stderr, "Failed to load kernel.\n");
+        exit(1);
+    }
+\end{lstlisting}
+
+\noindent This part of the code add the new kernel to the main.cpp code base.
+If it is available it will be used, if not another kernel (w/o SIMD) will be used.
+If both of the cases above fail, we raise an error. \\\\
+
+\noindent We also should not forget to add the preprocessing macro at the beginning of our code.
+This allows us to use SIMD in commands, such as \#ifdef, to switch between scalar or simd execution during compile time.
+
+\begin{lstlisting}[caption=main.cpp]
+    #define SIMD
+\end{lstlisting}
+
+\noindent Adjust our list size, to be divisible by 4.
+\begin{lstlisting}[caption=main.cpp]
+    const int LIST_SIZE = 1024;
+\end{lstlisting}
+
+\noindent Last but not least, we need to compute the item size.
+We do this the same way, in which we have loaded the kernel.
+
+\begin{lstlisting}[caption=main.cpp]
+    #ifdef SIMD
+    size_t global_item_size = LIST_SIZE/4; // Process the entire lists
+#else
+    size_t global_item_size = LIST_SIZE;
+#endif
+    size_t local_item_size = 64; // Process in groups of 64
+\end{lstlisting}
+
+\noindent If we have defined SIMD, we will determine the number of work items we need.
+For our list size this would result in 256 work items.
+If we SIMD is not defined our item size will equal the list size.
+Lastly if both of the cases above fail to trigger, we will process in groups of 64.
+
 \subsection*{Part 4}
+In this part sub devices are added. \\
+Starting off by gathering device information:
+\begin{lstlisting}
+    cl_platform_id platform_id = NULL;
+    cl_device_id device_id = NULL;   
+    cl_uint ret_num_devices;
+    cl_uint ret_num_platforms;
+    cl_int ret = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
+    checkErr(ret, "clGetPlatformIDs");
+\end{lstlisting}
+The first two lines initialize as NULL and will be used later on to refer the platform and device.
+The next two lines hold the number of platforms and devices.
+Line 5 denotes an error code (cl\_int), which tells if the platform id was fetched successfully.
+Here only one platform is returned and written to platform\_id, due to the first parameter. Also an error check is performed.\\\\
+
+\noindent Here we perform the same task as described above, but for our device.\\
+CL\_DEVICE\_TYPE\_CPU restricts us to devices of a certain type.
+\begin{lstlisting}
+    ret = clGetDeviceIDs( platform_id, CL_DEVICE_TYPE_CPU, 1, 
+    &device_id, &ret_num_devices);
+    checkErr(ret, "clGetDeviceIDs");
+\end{lstlisting}
+
+\noindent These two lines denote variables to hold the number and id of the created subdevices.
+\begin{lstlisting}
+    cl_uint num_devices_ret;
+    cl_device_id  out_devices[80];
+\end{lstlisting}
+
+\noindent This part denotes the properties based on which the device will be partitioned into subdevices.
+An equal partion means dividing it into as many parts as possible, while each part contains the same number of compute units (in this case 2).
+Subsequently the devices are created based on the defined properties.
+At the end again an error check is performed.
+\begin{lstlisting}
+    const cl_device_partition_property props[] = {CL_DEVICE_PARTITION_EQUALLY, 2, 0};
+    ret = clCreateSubDevices ( device_id, props, 80 , out_devices , &num_devices_ret );
+    checkErr(ret, "clCreateSubDevices");
+\end{lstlisting}
+\newpage
+
+The other partition methods, include partitioning by counts and affinity domain.
+When we partition by count, we can specify the exact number of compute units each subdevice should have.
+This allows a more find-grained control.
+\begin{lstlisting}
+    const cl_device_partition_property props[] = {CL_DEVICE_PARTITION_BY_COUNTS, 1, 1, CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0};
+\end{lstlisting}
+Additionally there is the partitioning method by affinity domain.
+Those affinity domains are specific areas of the device (e.g. L1, L2 Cache).
+The subdevices will then be created and have an affinity to a certain affinity domain.
+The code below will result in an affinity (e.g. faster access) to the L1 Cache.
+\begin{lstlisting}
+    const cl_device_partition_property props[] = {CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE, 0};
+\end{lstlisting}
 \subsection*{Part 5}
 \subsection*{Part 6}
 \subsection*{Appendix}
