@@ -1,0 +1,60 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{pgfplots}
+\usepackage{subcaption}
+\usepackage{hyperref}
+
+\title{\textbf{High Performance Computer Architectures Practical Course \\ - Exercise 8 -} \\[10mm]}
+\author{Tutorium 1 \\[10mm] David Jordan (6260776) \\[1mm] Florian Rüffer (7454628) \\[1mm] Michael Samjatin (7485765) \\[10mm]}
+
+
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    commentstyle=\color{green},
+    numbers=left,
+    numberstyle=\normalsize,
+    breaklines=true,
+    showstringspaces=false,
+    frame=single,
+    linewidth=1\linewidth,
+    captionpos=b
+}
+\renewcommand{\lstlistingname}{File}% Listing -> Algorithm
+\renewcommand{\lstlistlistingname}{List of \lstlistingname s}% List of Listings -> List of Algorithms
+
+\begin{document}
+\maketitle
+\newpage
+\section*{1\_First}
+\subsection*{Part 1}
+\subsection*{Part 2}
+\subsection*{Part 3}
+\subsection*{Part 4}
+\subsection*{Part 5}
+\subsection*{Part 6}
+\subsection*{Appendix}
+
+\begin{lstlisting}[caption=example code]
+    #pragma omp parallel for num_threads(omp_get_num_procs())
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{example-image.png} 
+    \caption{example image}
+    \label{fig:graph}
+\end{figure}
+
+
+
+\end{document}
