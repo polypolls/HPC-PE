@@ -37,7 +37,88 @@
 \newpage
 \section*{1\_First}
 \subsection*{Part 1}
+In this part we have to compile and run the code for main1.cpp. The checkErr function is meant to check the return value of OpenCL function calls and returns an error message if one does occur.
+
+\begin{lstlisting}[main1.cpp error function]
+   checkErr(cl_int err, const char *name)
+{
+        // Error codes are indeed CL_SUCCESS == 0
+        if (err != CL_SUCCESS)
+        {
+                std::cerr << "ERROR: " << name
+                          << " (" << err << ")" << std::endl;
+                exit(EXIT_FAILURE);
+        }
+}
+\end{lstlisting}
+We proceed to vary the sizes of the LIST\_SIZE variable. Upon running the program we see that the program provides all permutations of adding together two integers to get the specified LIST\_SIZE. To summarize the functioning of the program:
+After the program creates respective OpenCL context, command queue and memory buffer for each vector, it copies A and B into their respective memory buffers. It creates a program from the kernel source and then builds the program. It then creates the OpenCL kernel and executes it on the LIST:
+\begin{lstlisting}[main1.cpp error function]
+ size_t global_item_size = LIST_SIZE; // Process the entire lists
+        size_t local_item_size = 1;          // Process in groups of 1
+
+        ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL,
+                                     &global_item_size, &local_item_size, 0, NULL, NULL);
+        checkErr(ret, "clEnqueueNDRangeKernel");
+\end{lstlisting}
+
+It stores the memory buffer C on the device to the local variable C and displays the result of the addition on the console.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{opencl_1.png} 
+    \caption{console output}
+    \label{fig:graph}
+\end{figure}
+
 \subsection*{Part 2}
+The following lines retrieve the build log information for the program compilation:
+\begin{lstlisting}[getting build log]
+ char* build_log; // the pointer to a char  
+                  //array that will store the build log information
+    size_t log_size;
+    // First call to know the proper size
+    clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+    build_log = new char[log_size+1];
+    // Second call to get the log
+    clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, log_size, build_log, NULL);
+    build_log[log_size] = '\0';
+    cout << build_log << endl;
+    delete[] build_log;
+\end{lstlisting}
+In order to have a comparison for the runtimes  of the OpenCL Code, a normal scalar version of addition in C++ is implemented:
+
+\begin{lstlisting}[scalar add in cpp]
+typedef float DataType;
+
+void scalar_add( DataType A,  DataType B,  DataType C) {
+
+      // Do the operation
+    C = A + B;
+}
+\end{lstlisting}
+This function is then later called together with a timing function. 
+Upon executing the program with the simple addition, the scalar version turns out to be almost two orders of magnitude faster in the execution of this simple operation:
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{scalar_add.png} 
+    \caption{scalar addition is much faster}
+    \label{fig:graph}
+\end{figure}
+
+This can only be because of significant overhead in OpenCL compared to the standard C++ version. 
+
+Only when the complexity of the calculations is increased using expensive operations like sqrt and log() can the advantage of the OpenCL parallelisation come through. A sufficiently complicated calculation yields a threefold improvement of the Scalar time: 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{logs_andsqrt.png} 
+    \caption{for complex logs and sqrt times, parallel is much faster}
+    \label{fig:graph}
+\end{figure}
+
+This can only be because these more complicated operations offer the opportunity to be parallellized by OpenCL, that is parts of these operations, where there are no data dependencies are executed simultaneously.
+
 \subsection*{Part 3}
 In this part we need to SIMDize the program. \\
 We start off by creating the vector\_add\_kernel2.cl file,
@@ -57,7 +138,6 @@ which contains code to utilize SIMD capabilities.
     vstore4( a + b, i, C );
 }
 \end{lstlisting}
-
 \noindent The first line defines a kernel function, which can be executed on an OpenCL device. \\
 The function takes three parameters (A, B, C), which can be located in the global memory space.
 Furthermore line 4 gets the id is of the current work item and assigns the i-th group of A, B and C to it.
