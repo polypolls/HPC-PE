@@ -246,19 +246,68 @@ The code below will result in an affinity (e.g. faster access) to the L1 Cache.
     const cl_device_partition_property props[] = {CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE, 0};
 \end{lstlisting}
 \subsection*{Part 5}
-\subsection*{Part 6}
-\subsection*{Appendix}
 
-\begin{lstlisting}[caption=example code]
-    #pragma omp parallel for num_threads(omp_get_num_procs())
+In this exercise, we will focus on implementing a SIMD version. The SIMD (Single Instruction, Multiple Data) approach allows us to perform parallel computations on multiple data elements simultaneously, which can greatly enhance the performance of our program.
+
+To begin, we need to load the corresponding kernel file. This file contains the code that will be executed on the GPU:
+
+\begin{lstlisting}[language=C++, numbers=none]
+// Part of the source code of Solution/main5.cpp
+fp = fopen("vector_add_kernel4.cl", "r");
 \end{lstlisting}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.6]{example-image.png} 
-    \caption{example image}
-    \label{fig:graph}
-\end{figure}
+Next, we need to build the kernel using the C++ option. Building the kernel involves compiling the GPU code so that it can be executed on the available OpenCL devices:
+
+\begin{lstlisting}[language=C++, numbers=none]
+// Part of the source code of Solution/main5.cpp
+ret = clBuildProgram(program, 1, &out_devices[0], "-x clc++", NULL, NULL);
+\end{lstlisting}
+
+Now, let's take a closer look at the kernel code. We define a function called \texttt{Add} that takes two \texttt{float4} vectors, \texttt{a} and \texttt{b}, and calculates their sum, storing it in the \texttt{sum} vector:
+
+\begin{lstlisting}[language=C++, numbers=none]
+// Part of the source code of Solution/vector_add_kernel4.cl
+void Add(float4 &a, float4 &b, float4 &sum) {
+    sum = a + b;
+}
+\end{lstlisting}
+
+The main kernel function, \texttt{vector\_add}, performs the vector addition operation. It takes three global arrays, \texttt{A}, \texttt{B}, and \texttt{C}, as input parameters:
+
+\begin{lstlisting}[language=C++, numbers=none]
+// Part of the source code of Solution/vector_add_kernel4.cl
+__kernel void vector_add(__global float *A, __global float *B, __global float *C) {
+    // Get the index of the current element
+    int i = get_global_id(0);
+    
+    // Get the i-th group of 4
+    float4 a = vload4(i, A);
+    float4 b = vload4(i, B);
+    float4 sum;
+    Add(a, b, sum);
+    
+    // Store the sum of a and b to the 4*i-th element
+    vstore4(sum, i, C);
+}
+\end{lstlisting}
+
+In the \texttt{vector\_add} function, we first obtain the index of the current element using the \texttt{get\_global\_id} function. This index will be used to access the corresponding elements in the input arrays.
+
+Then, we load a group of four elements from arrays \texttt{A} and \texttt{B} using the \texttt{vload4} function, which loads the elements into \texttt{float4} vectors \texttt{a} and \texttt{b}. These vectors represent the data elements that will be processed in parallel.
+
+Next, we create a \texttt{float4} vector called \texttt{sum}, and pass \texttt{a}, \texttt{b}, and \texttt{sum} to the \texttt{Add} function to perform the vector addition.
+
+Finally, we store the sum of \texttt{a} and \texttt{b} into the output array \texttt{C} at the 4 times \texttt{i}-th element using the \texttt{vstore4} function.
+
+By utilizing SIMD and parallel processing, we can achieve significant speedups in our vector addition computation.
+
+\subsection*{Part 6}
+
+In this exercise, the objective is to perform vector addition on the GPU using OpenCL. The code provided includes two files: \texttt{main6.cpp} and \texttt{vector\_add\_kernel.cl} (or \texttt{vector\_add\_kernel2.cl} if SIMD is defined).
+
+To run the code, compile \texttt{main6.cpp} with the necessary OpenCL and Vc libraries (if SIMD is enabled). Then execute the resulting binary. The program will measure the execution time of the parallel and sequential versions and compare their results for correctness.
+
+The speed increase is consistent with preivous exercises, being multiple times faster, and even more this time.
 
 
 
